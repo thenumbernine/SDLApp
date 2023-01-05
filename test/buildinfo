@@ -1,0 +1,8 @@
+distName='test'
+distType='app'
+depends:append{
+	'..',			-- SDLApp
+	'../../Tensor',
+	'../../Common',
+}
+libs:insert'vulkan'
