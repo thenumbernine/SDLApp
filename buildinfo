@@ -1,0 +1,40 @@
+distName='SDLApp'
+distType='lib'
+depends:append{'../Common', '../Tensor'}
+
+if platform == 'msvc' 
+or platform == 'clang_win' 
+then
+	local SDLDir = os.getenv'SDL2_DIR'
+	local SDLLibDir = os.getenv'SDL2_LIB_DIR'
+	local SDLIncDir = os.getenv'SDL2_INCLUDE_DIR'
+	assert(SDLDir or (SDLLibDir and SDLIncDir), "make sure you define the environment variable SDL2_DIR or both SDL2_INCLUDE_DIR and SDL2_LIB_DIR")
+	SDLLibDir = SDLLibDir or SDLDir .. [[\lib\x64]]
+	SDLIncDir = SDLIncDir or SDLDir..[[\include]]
+	dynamicLibs:insert(SDLLibDir..[[\SDL2.lib]])
+	dynamicLibs:insert(SDLLibDir..[[\SDL2main.lib]])
+	include:insert(SDLIncDir)
+
+	-- SDL2main.lib now needs this:
+	libs:insert'shell32.lib'
+end
+
+-- alright, how many more platforms can I replace with this?
+if platform == 'linux' then 
+	env:addPackages'sdl2'
+end
+
+if platform == 'mingw' then
+	local SDLLibDir = os.getenv'SDL2_DIR'..[[\i686-w64-mingw32\lib]]
+	libpaths:insert(SDLLibDir) 
+	libs:append{'SDL2main', 'SDL2'}
+end
+
+if platform == 'osx' then
+	--dynamic
+	include:insert(home..'/include/SDL2')
+	dynamicLibs:insert(home..'/lib/libSDL2-2.0.0.dylib')
+	--static
+	--libpaths:insert(home..'/lib')
+	--libs:insert'SDL2main'
+end
