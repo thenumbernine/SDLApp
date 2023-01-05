@@ -3,6 +3,7 @@
 #include <SDL_vulkan.h>
 #include <vulkan/vulkan.hpp>
 #include <iostream>	//debugging only
+#include <set>
 
 //https://www.gamedev.net/forums/topic/699117-vulkan-with-sdl2-getting-started/
 //https://vulkan-tutorial.com/Drawing_a_triangle/Setup/Instance
@@ -33,9 +34,9 @@ protected:
 
 	virtual void initVulkan() {
 		initVulkanInstance();
+		initVulkanSurface();
 		initVulkanPhysicalDevice();
 		initVulkanLogicalDevice();
-		initVulkanSurface();
 	}
 
 	VkInstance vkinstance = {};
@@ -108,7 +109,18 @@ protected:
 		// physical devices, create a logical device plus queues, and create your
 		// swapchain.
 	}
+	
+	VkSurfaceKHR vksurface;
 		
+	virtual void initVulkanSurface() {
+		// TODO YOU ARE HERE
+		// https://vulkan-tutorial.com/Drawing_a_triangle/Presentation/Window_surface
+
+		if (!SDL_Vulkan_CreateSurface(window, vkinstance, &vksurface)) {
+			 throw Common::Exception() << "vkCreateWaylandSurfaceKHR failed";
+		}
+	}
+
 	VkPhysicalDevice physicalDevice = {};
 		
 	virtual void initVulkanPhysicalDevice() {
@@ -154,36 +166,68 @@ protected:
 	}
 
 	VkDevice vkdevice = {};
-
+	VkQueue graphicsQueue;
+	VkQueue presentQueue;
+		
 	virtual void initVulkanLogicalDevice() {
-#if 1	// tut has this in the end of initVulkanPhysicalDevice 
+		// tut has this in the end of initVulkanPhysicalDevice 
 		// probably so it can inquire each device to see if its queuefamilies has the right bits.
 		uint32_t queueFamilyCount = 0;
-		vkGetPhysicalDeviceQueueFamilyProperties(vkdevice, &queueFamilyCount, nullptr);
+		vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
 		std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-		vkGetPhysicalDeviceQueueFamilyProperties(vkdevice, &queueFamilyCount, queueFamilies.data());
-		auto queueFamilyIter = std::find_if(queueFamilies.begin(), queueFamilies.end(), [this](auto const & VkQueueFamilyProperties f) -> bool {
-			return f.queueFlags & VK_QUEUE_GRAPHICS_BIT;
-		});
-		if (queueFamilyIter == queueFamilies.end()) {
+		vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, queueFamilies.data());
+
+		//tut uses optional<uint32_t> instead of -1's
+		uint32_t graphicsFamilyIndex = -1u;
+		uint32_t presentFamilyIndex = -1u;
+		for (uint32_t i = 0; i < queueFamilies.size(); ++i) {
+			auto f = queueFamilies[i];
+			if (f.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+				graphicsFamilyIndex = i;
+			}
+			
+			VkBool32 presentSupport = false;
+			vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, vksurface, &presentSupport);
+			if (presentSupport) {
+				presentFamilyIndex = i;
+			}
+		}
+		if (graphicsFamilyIndex == -1u) {
 			throw Common::Exception() << "couldn't find a VkQueueFamily with VK_QUEUE_GRAPHICS_BIT";
 		}
-		auto graphicsFamilyIndex = queueFamilyIter - queueFamilies.begin();
-#endif
+		if (presentFamilyIndex == -1u) {
+			throw Common::Exception() << "couldn't find a VkQueueFamily with VK_QUEUE_GRAPHICS_BIT";
+		}
 
-		VkDeviceQueueCreateInfo queueCreateInfo{};
+
+		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+		{
+			std::set<uint32_t> uniqueQueueFamilies = {graphicsFamilyIndex, presentFamilyIndex};
+			float queuePriority = 1.0f;
+			for (uint32_t queueFamily : uniqueQueueFamilies) {
+				VkDeviceQueueCreateInfo queueCreateInfo = {};
+				queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+				queueCreateInfo.queueFamilyIndex = queueFamily;
+				queueCreateInfo.queueCount = 1;
+				queueCreateInfo.pQueuePriorities = &queuePriority;
+				queueCreateInfos.push_back(queueCreateInfo);
+			}
+		}
+
+
+		VkDeviceQueueCreateInfo queueCreateInfo = {};
 		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		queueCreateInfo.queueFamilyIndex = graphicsFamilyIndex;
 		queueCreateInfo.queueCount = 1;
 		float queuePriority = 1.0f;
 		queueCreateInfo.pQueuePriorities = &queuePriority;
 
-		VkPhysicalDeviceFeatures deviceFeatures{};
-		VkDeviceCreateInfo createInfo{};
+		//VkPhysicalDeviceFeatures deviceFeatures = {}; // empty
+		VkDeviceCreateInfo createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 		createInfo.pQueueCreateInfos = &queueCreateInfo;
-		createInfo.queueCreateInfoCount = 1;
-		createInfo.pEnabledFeatures = &deviceFeatures;
+		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+		createInfo.pQueueCreateInfos = queueCreateInfos.data();
 		createInfo.enabledExtensionCount = 0;
 		if (useValidationLayers) {
 		// TODO remind me again where validationLayers is from?
@@ -192,23 +236,18 @@ protected:
 		} else {
 			createInfo.enabledLayerCount = 0;
 		}
-		if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &vkdevice) != VK_SUCCESS) {
-			throw Common::Exception() << "vkCreateDevice failed";
+		{
+			VkResult res = vkCreateDevice(physicalDevice, &createInfo, nullptr, &vkdevice);
+			if (res != VK_SUCCESS) throw Common::Exception() << "vkCreateDevice failed: " << res;
 		}
 	
-		VkQueue graphicsQueue;
 		vkGetDeviceQueue(vkdevice, graphicsFamilyIndex, 0, &graphicsQueue);
-	}
-
-	VkSurfaceKHR surface;
-		
-	virtual void initVulkanSurface() {
-		// TODO YOU ARE HERE
-		// https://vulkan-tutorial.com/Drawing_a_triangle/Presentation/Window_surface
+		vkGetDeviceQueue(vkdevice, presentFamilyIndex, 0, &presentQueue);
 	}
 
 public:
 	~Test() {
+		if (vksurface) vkDestroySurfaceKHR(vkinstance, vksurface, nullptr);
 		if (vkdevice) vkDestroyDevice(vkdevice, nullptr);
 		if (vkinstance) vkDestroyInstance(vkinstance, nullptr);
 	}
