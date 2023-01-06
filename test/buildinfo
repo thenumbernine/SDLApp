@@ -5,4 +5,3 @@ depends:append{
 	'../../Tensor',
 	'../../Common',
 }
-libs:insert'vulkan'
