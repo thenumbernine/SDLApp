@@ -1,9 +1,6 @@
-#any dependent projects need these:
 SDLAPP_PATH:=$(dir $(lastword $(MAKEFILE_LIST)))
-
 INCLUDE+=$(SDLAPP_PATH)/include
-
-DYNAMIC_LIBS+=$(SDLAPP_PATH)dist/$(PLATFORM)/$(BUILD)/libSDLApp$(LIB_SUFFIX)
+DEPEND_LIBS+=$(SDLAPP_PATH)dist/$(PLATFORM)/$(BUILD)/$(LIB_PREFIX)SDLApp$(LIB_SUFFIX)
 
 # this is in common with Makefile:
 
