@@ -37,7 +37,7 @@ protected:
 	virtual int getSDLInitFlags();
 
 public:
-	virtual std::string getTitle();
+	virtual std::string getTitle() const;
 
 	virtual void loop();
 

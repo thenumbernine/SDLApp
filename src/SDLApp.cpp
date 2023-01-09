@@ -82,7 +82,7 @@ Uint32 SDLApp::getSDLCreateWindowFlags() {
 	return SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN;
 }
 
-std::string SDLApp::getTitle() {
+std::string SDLApp::getTitle() const {
 	return "SDL App";
 }
 
