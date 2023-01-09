@@ -165,4 +165,8 @@ float SDLApp::getAspectRatio() const {
 	return aspectRatio;
 }
 
+SDL_Window * SDLApp::getWindow() const {
+	return window;
+}
+
 }

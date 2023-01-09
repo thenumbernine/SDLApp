@@ -55,7 +55,7 @@ public:
 	virtual float getAspectRatio() const;
 
 	//used for access
-	SDL_Window * getWindow() { return window; }
+	SDL_Window * getWindow() const;
 };
 
 }
