@@ -22,6 +22,8 @@ public:
 	 (using the SDLAPP_MAIN macro)
 	*/
 	static std::shared_ptr<::SDLApp::SDLApp> createMainSDLApp();
+	
+	virtual ~SDLApp();
 
 	//vtable isn't set up yet so don't pass args into SDLApp via ctor
 	virtual void init(Init const & args);
@@ -31,12 +33,11 @@ protected:
 	// initialize the 'window' field
 	//vtable isn't set up yet so don't pass args into SDLApp via ctor
 	virtual void initWindow();
-	virtual std::string getTitle();
 	virtual Uint32 getSDLCreateWindowFlags();
 	virtual int getSDLInitFlags();
 
 public:
-	virtual ~SDLApp();
+	virtual std::string getTitle();
 
 	virtual void loop();
 
