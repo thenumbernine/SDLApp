@@ -31,10 +31,7 @@ if platform == 'mingw' then
 end
 
 if platform == 'osx' then
-	--dynamic
-	include:insert(home..'/include/SDL2')
-	dynamicLibs:insert(home..'/lib/libSDL2-2.0.0.dylib')
-	--static
-	--libpaths:insert(home..'/lib')
+	include:insert'/usr/local/include/SDL2'
+	dynamicLibs:insert'/usr/local/lib/libSDL2.dylib'
 	--libs:insert'SDL2main'
 end
