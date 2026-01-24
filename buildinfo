@@ -5,33 +5,35 @@ depends:append{'../Common', '../Tensor'}
 if platform == 'msvc' 
 or platform == 'clang_win' 
 then
-	local SDLDir = os.getenv'SDL2_DIR'
-	local SDLLibDir = os.getenv'SDL2_LIB_DIR'
-	local SDLIncDir = os.getenv'SDL2_INCLUDE_DIR'
-	assert(SDLDir or (SDLLibDir and SDLIncDir), "make sure you define the environment variable SDL2_DIR or both SDL2_INCLUDE_DIR and SDL2_LIB_DIR")
+	local SDLDir = os.getenv'SDL3_DIR'
+	local SDLLibDir = os.getenv'SDL3_LIB_DIR'
+	local SDLIncDir = os.getenv'SDL3_INCLUDE_DIR'
+	assert(SDLDir or (SDLLibDir and SDLIncDir), "make sure you define the environment variable SDL3_DIR or both SDL3_INCLUDE_DIR and SDL3_LIB_DIR")
 	SDLLibDir = SDLLibDir or SDLDir .. [[\lib\x64]]
 	SDLIncDir = SDLIncDir or SDLDir..[[\include]]
-	dynamicLibs:insert(SDLLibDir..[[\SDL2.lib]])
-	dynamicLibs:insert(SDLLibDir..[[\SDL2main.lib]])
+	dynamicLibs:insert(SDLLibDir..[[\SDL3.lib]])
+	dynamicLibs:insert(SDLLibDir..[[\SDL3main.lib]])
 	include:insert(SDLIncDir)
 
-	-- SDL2main.lib now needs this:
+	-- SDL3main.lib now needs this:
 	libs:insert'shell32.lib'
 end
 
 -- alright, how many more platforms can I replace with this?
 if platform == 'linux' then 
-	env:addPackages'sdl2'
+	env:addPackages'sdl3'
+	-- welp `pkg-config --cflags sdl3` no longer gives back `/usr/include/SDL3` like it did in SDL2, so ...
+	include:insert'/usr/include/SDL3'
 end
 
 if platform == 'mingw' then
-	local SDLLibDir = os.getenv'SDL2_DIR'..[[\i686-w64-mingw32\lib]]
+	local SDLLibDir = os.getenv'SDL3_DIR'..[[\i686-w64-mingw32\lib]]
 	libpaths:insert(SDLLibDir) 
-	libs:append{'SDL2main', 'SDL2'}
+	libs:append{'SDL3main', 'SDL3'}
 end
 
 if platform == 'osx' then
-	include:insert'/usr/local/include/SDL2'
-	dynamicLibs:insert'/usr/local/lib/libSDL2.dylib'
-	--libs:insert'SDL2main'
+	include:insert'/usr/local/include/SDL3'
+	dynamicLibs:insert'/usr/local/lib/libSDL3.dylib'
+	--libs:insert'SDL3main'
 end

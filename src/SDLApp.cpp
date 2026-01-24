@@ -56,8 +56,9 @@ int main(int argc, char *argv[]) {
 namespace SDLApp {
 
 void SDLApp::init(const Init& args) {
-	int sdlInitError = SDL_Init(getSDLInitFlags());
-	if (sdlInitError) throw Common::Exception() << "SDL_Init failed with error code " << sdlInitError;
+	if (!SDL_Init(getSDLInitFlags())) {
+		throw Common::Exception() << "SDL_Init failed with error code " << SDL_GetError();
+	}
 	initWindow();
 	onResize();
 }
@@ -69,8 +70,6 @@ int SDLApp::getSDLInitFlags() {
 void SDLApp::initWindow() {
 	window = SDL_CreateWindow(
 		getTitle().c_str(),			// title
-		SDL_WINDOWPOS_CENTERED,		// x
-		SDL_WINDOWPOS_CENTERED,		// y
 		screenSize.x,				// w
 		screenSize.y,				// h
 		getSDLCreateWindowFlags()	// flags
@@ -79,7 +78,7 @@ void SDLApp::initWindow() {
 }
 
 Uint32 SDLApp::getSDLCreateWindowFlags() {
-	return SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN;
+	return SDL_WINDOW_RESIZABLE;
 }
 
 std::string SDLApp::getTitle() const {
@@ -96,28 +95,24 @@ void SDLApp::loop() {
 	while (!done) {
 		while (SDL_PollEvent(&event) > 0) {
 			switch (event.type) {
-			case SDL_QUIT:
-				done = true;
+			case SDL_EVENT_QUIT:
+				requestExit();
 				break;
-			case SDL_WINDOWEVENT:
-				switch (event.window.event) {
-				case SDL_WINDOWEVENT_RESIZED:
-					screenSize.x = event.window.data1;
-					screenSize.y = event.window.data2;
-					aspectRatio = (float)screenSize.x / (float)screenSize.y;
-					onResize();
-					break;
-				}
+			case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+				screenSize.x = event.window.data1;
+				screenSize.y = event.window.data2;
+				aspectRatio = (float)screenSize.x / (float)screenSize.y;
+				onResize();
 				break;
-			case SDL_KEYDOWN:
+			case SDL_EVENT_KEY_DOWN:
 #if PLATFORM_WINDOWS
-					if (event.key.keysym.sym == SDLK_F4 && (event.key.keysym.mod & KMOD_ALT) != 0) {
-						done = true;
+					if (event.key.key == SDLK_F4 && (event.key.mod & SDL_KMOD_ALT) != 0) {
+						requestExit();
 					}
 #endif
 #if PLATFORM_OSX
-					if (event.key.keysym.sym == SDLK_q && (event.key.keysym.mod & KMOD_GUI) != 0) {
-						done = true;
+					if (event.key.key == SDLK_q && (event.key.mod & SDL_KMOD_GUI) != 0) {
+						requestExit();
 					}
 #endif
 				break;
